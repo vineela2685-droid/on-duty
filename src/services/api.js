@@ -9,19 +9,17 @@ export const apiService = {
 
   // User operations
   async getUsers() {
-    const response = await fetch(`${API_BASE_URL}/users`);
-    return response.json();
+    const res = await fetch('http://localhost:5000/users');
+    return await res.json();
   },
 
-  async createUser(userData) {
-    const response = await fetch(`${API_BASE_URL}/users`, {
+  async createUser(data) {
+    const res = await fetch('http://localhost:5000/users', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(userData),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
     });
-    return response.json();
+    return await res.json();
   },
 
   async updateUser(id, userData) {

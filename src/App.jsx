@@ -127,7 +127,7 @@ export default function App() {
     }
   }, [user]);
 
-  function register({name, email, password, role = 'student'}) {
+  async function register({name, email, password, role = 'student'}) {
     const all = getUsers();
     if (all.find(x => x.email === email)) throw new Error('Email already used');
     const nu = {id: uid('u'), name, email, password, role};
@@ -135,6 +135,15 @@ export default function App() {
     setUsers(next);
     localStorage.setItem('odp_session', nu.id);
     setUser(nu);
+
+    // Register user in MongoDB
+    try {
+      await apiService.createUser({ name, email, password, role });
+      const mongoUsers = await apiService.getUsers();
+      setMongodbUsers(mongoUsers);
+    } catch (err) {
+      console.error('MongoDB registration failed:', err.message);
+    }
   }
 
   function login({email, password}) {
@@ -1040,38 +1049,22 @@ export default function App() {
           <div className="sidebar">
             <div>
               <div className="h2">Team Members</div>
+              <div className="muted" style={{marginBottom: '16px'}}>From MongoDB Database</div>
               {mongodbUsers.length > 0 ? (
-                <>
-                  <div className="muted" style={{marginBottom: '16px'}}>From MongoDB Database</div>
-                  {mongodbUsers.map(u => (
-                    <div key={u._id} className="team-member">
-                      <div className="member-avatar">
-                        {u.name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()}
-                      </div>
-                      <div className="member-info">
-                        <div className="member-name">{u.name}</div>
-                        <div className="member-role">{u.role}</div>
-                      </div>
-                      <div className="member-status">{u.email === user?.email ? 'You' : ''}</div>
+                mongodbUsers.map(u => (
+                  <div key={u._id} className="team-member">
+                    <div className="member-avatar">
+                      {u.name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()}
                     </div>
-                  ))}
-                </>
+                    <div className="member-info">
+                      <div className="member-name">{u.name}</div>
+                      <div className="member-role">{u.role}</div>
+                    </div>
+                    <div className="member-status">{u.email === user?.email ? 'You' : ''}</div>
+                  </div>
+                ))
               ) : (
-                <>
-                  <div className="muted" style={{marginBottom: '16px'}}>Local Storage (Demo)</div>
-                  {getUsers().map(u => (
-                    <div key={u.id} className="team-member">
-                      <div className="member-avatar">
-                        {u.name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()}
-                      </div>
-                      <div className="member-info">
-                        <div className="member-name">{u.name}</div>
-                        <div className="member-role">{u.role}</div>
-                      </div>
-                      <div className="member-status">{u.id === user.id ? 'You' : ''}</div>
-                    </div>
-                  ))}
-                </>
+                <div className="empty">No MongoDB users found.</div>
               )}
             </div>
           </div>
@@ -1370,3 +1363,5 @@ function RequestAdminView({requests, onAccept, onReject, onDelete, currentUser, 
     </div>
   );
 }
+
+

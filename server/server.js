@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import cors from 'cors';
 import connectDB from './config/database.js';
 import userRoutes from './routes/users.js';
+import User from './models/User.js'; // <-- add .js extension
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -16,6 +17,23 @@ connectDB();
 
 // Routes
 app.use('/api/users', userRoutes);
+
+// Create user endpoint
+app.post('/users', async (req, res) => {
+  try {
+    const user = new User(req.body);
+    await user.save();
+    res.status(201).json(user);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// Get users endpoint
+app.get('/users', async (req, res) => {
+  const users = await User.find();
+  res.json(users);
+});
 
 // Basic route for testing
 app.get('/', (req, res) => {
