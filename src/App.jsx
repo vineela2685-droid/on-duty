@@ -7,6 +7,8 @@ OnDuty Pro — Fresh New Version
 */
 
 import React, { useState, useEffect, useMemo } from "react";
+import MongoDBTest from "./components/MongoDBTest";
+import { apiService } from "./services/api";
 
 // Simple localStorage helpers
 const LS_USERS = "odp_users_v3";
@@ -73,6 +75,7 @@ function uid(prefix = 'id') {
 export default function App() {
   const [user, setUser] = useState(null);
   const [users, setUsers] = useState(getUsers());
+  const [mongodbUsers, setMongodbUsers] = useState([]);
   const [requests, setRequests] = useState(getRequests());
   const [view, setView] = useState('dashboard');
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -98,6 +101,20 @@ export default function App() {
     localStorage.setItem('odp_theme', isDarkMode ? 'dark' : 'light');
     document.body.className = isDarkMode ? 'dark' : 'light';
   }, [isDarkMode]);
+
+  // Fetch MongoDB users
+  useEffect(() => {
+    async function fetchMongoDBUsers() {
+      try {
+        const users = await apiService.getUsers();
+        setMongodbUsers(users);
+      } catch (error) {
+        console.log('MongoDB users not available yet:', error.message);
+      }
+    }
+    
+    fetchMongoDBUsers();
+  }, []);
 
   // Set default view based on role
   useEffect(() => {
@@ -928,6 +945,7 @@ export default function App() {
                     <div className="action-buttons">
                       <button className="btn btn-primary" onClick={() => setView('approve-requests')}>Review Pending Requests</button>
                       <button className="btn" onClick={() => setView('all-requests')}>View All Requests</button>
+                      <button className="btn" onClick={() => setView('mongodb-test')}>MongoDB Test</button>
             </div>
           </div>
               </div>
@@ -964,6 +982,16 @@ export default function App() {
                   currentUser={user}
                 />
               </div>
+              )}
+
+              {view === 'mongodb-test' && (
+                <div>
+                  <div className="page-header">
+                    <div className="h1">MongoDB Connection Test</div>
+                    <div className="muted">Test your MongoDB connection and operations</div>
+                  </div>
+                  <MongoDBTest />
+                </div>
               )}
             </>
           )}
@@ -1012,19 +1040,39 @@ export default function App() {
           <div className="sidebar">
             <div>
               <div className="h2">Team Members</div>
-              <div className="muted" style={{marginBottom: '16px'}}>Manage locally (for now)</div>
-              {getUsers().map(u => (
-                <div key={u.id} className="team-member">
-                  <div className="member-avatar">
-                    {u.name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()}
-                  </div>
-                  <div className="member-info">
-                    <div className="member-name">{u.name}</div>
-                    <div className="member-role">{u.role}</div>
-                  </div>
-                  <div className="member-status">{u.id === user.id ? 'You' : ''}</div>
-                </div>
-              ))}
+              {mongodbUsers.length > 0 ? (
+                <>
+                  <div className="muted" style={{marginBottom: '16px'}}>From MongoDB Database</div>
+                  {mongodbUsers.map(u => (
+                    <div key={u._id} className="team-member">
+                      <div className="member-avatar">
+                        {u.name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()}
+                      </div>
+                      <div className="member-info">
+                        <div className="member-name">{u.name}</div>
+                        <div className="member-role">{u.role}</div>
+                      </div>
+                      <div className="member-status">{u.email === user?.email ? 'You' : ''}</div>
+                    </div>
+                  ))}
+                </>
+              ) : (
+                <>
+                  <div className="muted" style={{marginBottom: '16px'}}>Local Storage (Demo)</div>
+                  {getUsers().map(u => (
+                    <div key={u.id} className="team-member">
+                      <div className="member-avatar">
+                        {u.name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()}
+                      </div>
+                      <div className="member-info">
+                        <div className="member-name">{u.name}</div>
+                        <div className="member-role">{u.role}</div>
+                      </div>
+                      <div className="member-status">{u.id === user.id ? 'You' : ''}</div>
+                    </div>
+                  ))}
+                </>
+              )}
             </div>
           </div>
         </div>
